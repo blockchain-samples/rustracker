@@ -1,0 +1,10 @@
+[package]
+name = "rustracker"
+version = "0.1.0"
+authors = ["Octavio Turra <octavio.turra@gmail.com>"]
+
+[dependencies]
+rust-crypto = "0.2.36"
+regex = "0.2"
+rand = "0.3"
+time = "*"

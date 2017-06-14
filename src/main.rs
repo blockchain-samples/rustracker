@@ -11,13 +11,14 @@ use std::io;
 /// This is a simple block with `string` only payload
 /// This block will be mined to receive a hash and points to its precedent
 #[derive(Clone)]
-struct Block {
+struct Block<'a> {
     master: String,
     owner: String,
     previous: String,
     payload: String,
     nounce: u64,
     hash: String,
+    last: Option<&'a Block<'a>>
 }
 
 /// Simple self implemented u64 random iterator
@@ -55,7 +56,7 @@ fn get_hash(data: &String) -> String {
 }
 
 /// Mining function that generates a hash for some block, based in its properties
-fn hashit<'a>(block: &'a mut Block, rules: &'a Rules) -> &'a Block {
+fn hashit<'a>(block: &'a mut Block, rules: &'a Rules) -> &'a Block<'a> {
     let rule = format!("^0{{{}}}", rules.zeros);
     let re = Regex::new(&rule).unwrap();
     let mut rnd = Randoner::new();
@@ -79,11 +80,24 @@ fn hashit<'a>(block: &'a mut Block, rules: &'a Rules) -> &'a Block {
     block
 }
 
+fn traverse<'a>(block: &'a Block) {
+    let mut current : &Block<'a> = block;
+    loop {
+        println!("Block hash: {} nounce:{}", current.hash, current.nounce);
+        match current.last {
+            Some(l) => current = l,
+            None => break,
+        }
+    }
+}
+
 fn main() {
     let rules = Rules {
         zeros: 5,
         max_nounce: 600000000u64,
     };
+
+    let mut last = None;
 
     println!("Digite o conteúdo para ser inserido no bloco:");
     let mut input = String::new();
@@ -98,14 +112,18 @@ fn main() {
         previous: "0".to_string(),
         payload: content.to_string(),
         nounce: 0,
-        hash: "none".to_string()
+        hash: "none".to_string(),
+        last: None
     };
     let mut block_clone = block.clone();
 
     println!("Gerando o hash para o bloco...");
     let start = PreciseTime::now();
-    let minted = hashit(&mut block_clone, &rules);
+    last = Some(hashit(&mut block_clone, &rules));
     let end = PreciseTime::now();
 
-    println!("Block hash: {} nounce:{} in {}s", minted.hash, minted.nounce, start.to(end));
+    match last {
+        Some(minted) => println!("Block hash: {} nounce:{} in {}s", minted.hash, minted.nounce, start.to(end)),
+        None => println!("Nenhum bloco"),
+    };
 }
